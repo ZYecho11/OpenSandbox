@@ -29,7 +29,7 @@ from kubernetes.client import (
     V1VolumeMount,
 )
 
-from src.config import AppConfig
+from src.config import AppConfig, EGRESS_MODE_DNS
 from src.services.helpers import format_ingress_endpoint
 from src.api.schema import Endpoint, ImageSpec, NetworkPolicy, Volume
 from src.services.k8s.agent_sandbox_template import AgentSandboxTemplateManager
@@ -134,6 +134,9 @@ class AgentSandboxProvider(WorkloadProvider):
         network_policy: Optional[NetworkPolicy] = None,
         egress_image: Optional[str] = None,
         volumes: Optional[List[Volume]] = None,
+        annotations: Optional[Dict[str, str]] = None,
+        egress_auth_token: Optional[str] = None,
+        egress_mode: str = EGRESS_MODE_DNS,
     ) -> Dict[str, Any]:
         """Create an agent-sandbox Sandbox CRD workload."""
         if self.runtime_class:
@@ -151,6 +154,8 @@ class AgentSandboxProvider(WorkloadProvider):
             execd_image=execd_image,
             network_policy=network_policy,
             egress_image=egress_image,
+            egress_auth_token=egress_auth_token,
+            egress_mode=egress_mode,
         )
 
         # Add user-specified volumes if provided
@@ -181,6 +186,8 @@ class AgentSandboxProvider(WorkloadProvider):
             },
             "spec": spec,
         }
+        if annotations:
+            runtime_manifest["metadata"]["annotations"] = annotations
 
         sandbox = self.template_manager.merge_with_runtime_values(runtime_manifest)
         # Set or strip shutdownTime after merge so we override any template value
@@ -211,6 +218,8 @@ class AgentSandboxProvider(WorkloadProvider):
         execd_image: str,
         network_policy: Optional[NetworkPolicy] = None,
         egress_image: Optional[str] = None,
+        egress_auth_token: Optional[str] = None,
+        egress_mode: str = EGRESS_MODE_DNS,
     ) -> Dict[str, Any]:
         """Build pod spec dict for the Sandbox CRD."""
         init_container = self._build_execd_init_container(execd_image)
@@ -247,8 +256,10 @@ class AgentSandboxProvider(WorkloadProvider):
             containers=containers,
             network_policy=network_policy,
             egress_image=egress_image,
+            egress_auth_token=egress_auth_token,
+            egress_mode=egress_mode,
         )
-        
+
         return pod_spec
 
     def _build_execd_init_container(self, execd_image: str) -> V1Container:
@@ -560,4 +571,3 @@ class AgentSandboxProvider(WorkloadProvider):
             return Endpoint(endpoint=f"{service_fqdn}:{port}")
 
         return None
-
