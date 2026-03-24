@@ -188,6 +188,18 @@ export class CommandsAdapter implements ExecdCommands {
       await dispatcher.dispatch(ev as any);
     }
 
+    if (!opts?.background) {
+      const errorValue = execution.error?.value?.trim();
+      const parsedExitCode =
+        errorValue && /^-?\d+$/.test(errorValue) ? Number(errorValue) : Number.NaN;
+      execution.exitCode =
+        execution.error != null
+          ? (Number.isFinite(parsedExitCode) ? parsedExitCode : null)
+          : execution.complete
+            ? 0
+            : null;
+    }
+
     return execution;
   }
 

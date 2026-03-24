@@ -127,6 +127,21 @@ internal sealed class CommandsAdapter : IExecdCommands
             await dispatcher.DispatchAsync(ev).ConfigureAwait(false);
         }
 
+        if (!(options?.Background ?? false))
+        {
+            if (execution.Error != null)
+            {
+                if (int.TryParse(execution.Error.Value, out var exitCode))
+                {
+                    execution.ExitCode = exitCode;
+                }
+            }
+            else if (execution.Complete != null)
+            {
+                execution.ExitCode = 0;
+            }
+        }
+
         return execution;
     }
 

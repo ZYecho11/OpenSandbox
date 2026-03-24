@@ -122,6 +122,14 @@ internal class CommandsAdapter(
                         }
                 }
             }
+            if (!request.background) {
+                execution.exitCode =
+                    if (execution.error != null) {
+                        execution.error?.value?.toIntOrNull()
+                    } else {
+                        if (execution.complete != null) 0 else null
+                    }
+            }
             return execution
         } catch (e: Exception) {
             logger.error("Failed to run command (length: {})", request.command.length, e)
@@ -192,7 +200,10 @@ internal class CommandsAdapter(
         return sessionAdapter.createSession(cwd)
     }
 
-    override fun runInSession(sessionId: String, request: RunInSessionRequest): Execution {
+    override fun runInSession(
+        sessionId: String,
+        request: RunInSessionRequest,
+    ): Execution {
         return sessionAdapter.runInSession(sessionId, request)
     }
 
